@@ -10,10 +10,8 @@ const registerUser = async (req, res) => {
       name,
       email,
       password,
-      role,
       designation,
       department,
-  
     } = req.body;
 
     const existingUser = await User.findOne({ email });
@@ -31,36 +29,22 @@ const registerUser = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role,
+      role: "user",
       designation,
       department,
-    
+      approvalStatus: "pending",
     });
-
-    const token = jwt.sign(
-      {
-        id: user._id,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
-    );
 
     res.status(201).json({
       success: true,
-      message: "User created successfully",
-      token,
+      message:
+        "Registration successful. Please wait for admin approval.",
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        designation: user.designation,
-        department: user.department,
-        imageUrl: user.imageUrl,
-        linkedin: user.linkedin,
+        approvalStatus: user.approvalStatus,
       },
     });
   } catch (error) {
@@ -97,6 +81,14 @@ const loginUser = async (req, res) => {
       });
     }
 
+    // Admin Approval Check
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is pending admin approval.",
+      });
+    }
+
     const token = jwt.sign(
       {
         id: user._id,
@@ -121,6 +113,7 @@ const loginUser = async (req, res) => {
         department: user.department,
         imageUrl: user.imageUrl,
         linkedin: user.linkedin,
+        facebook: user.facebook,
       },
     });
   } catch (error) {
@@ -130,8 +123,8 @@ const loginUser = async (req, res) => {
     });
   }
 };
-
 //updated user info
+
 
 const updateProfile = async (req, res) => {
   try {
@@ -258,7 +251,7 @@ const getAllUsers = async (req, res) => {
   try {
     const users = await User.find(
       { isActive: true },
-      "name role designation department imageUrl linkedin"
+      "name  designation department imageUrl linkedin"
     );
 
     res.status(200).json({
@@ -272,9 +265,6 @@ const getAllUsers = async (req, res) => {
     });
   }
 };
-
-
-
 
 
 const createMultipleUsers = async (req, res) => {

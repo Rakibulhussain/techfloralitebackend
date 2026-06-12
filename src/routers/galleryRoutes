@@ -1,0 +1,81 @@
+const express = require("express");
+const upload = require("../middlewares/upload");
+const { authMiddleware } = require("../middlewares/authMiddleware");
+
+const {
+  uploadGalleryImage,
+  uploadGalleryVideo,
+  updateGalleryMedia,
+  getGallery,
+  getGalleryImages,
+  getGalleryVideos,
+  getGalleryById,
+  getGalleryByCategory,
+  deleteGalleryMedia,
+} = require("../controllers/galleryController");
+
+const router = express.Router();
+
+/* ==========================================================
+   UPLOAD
+========================================================== */
+
+// Upload Image
+router.post(
+  "/upload-image",
+  authMiddleware,
+  upload.single("image"),
+  uploadGalleryImage
+);
+
+// Upload Video
+router.post(
+  "/upload-video",
+  authMiddleware,
+  upload.single("video"),
+  uploadGalleryVideo
+);
+
+/* ==========================================================
+   UPDATE
+========================================================== */
+
+// Update Image/Video + Details
+router.put(
+  "/:id",
+  authMiddleware,
+  upload.single("media"),
+  updateGalleryMedia
+);
+
+/* ==========================================================
+   GET
+========================================================== */
+
+// Get All Gallery
+router.get("/", getGallery);
+
+// Get Images Only
+router.get("/images", getGalleryImages);
+
+// Get Videos Only
+router.get("/videos", getGalleryVideos);
+
+// Get Category Wise
+router.get("/category/:category", getGalleryByCategory);
+
+// Get Single Gallery Item
+router.get("/:id", getGalleryById);
+
+/* ==========================================================
+   DELETE
+========================================================== */
+
+// Delete Gallery Item
+router.delete(
+  "/:id",
+  authMiddleware,
+  deleteGalleryMedia
+);
+
+module.exports = router;

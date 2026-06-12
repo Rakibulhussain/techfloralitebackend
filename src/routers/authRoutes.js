@@ -1,6 +1,6 @@
 const express = require("express");
 const upload = require("../middlewares/upload");
-const authMiddleware = require("../middlewares/authMiddleware");
+const { authMiddleware } = require("../middlewares/authMiddleware");
 
 const {
   registerUser,
@@ -17,7 +17,13 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.put("/update-profile",authMiddleware, updateProfile);
-router.post("/upload-profile-image",authMiddleware, upload.single("image"), uploadProfileImage);
+router.post(
+  "/upload-profile-image",
+  authMiddleware,
+  upload.single("image"),
+  uploadProfileImage
+);
+
 router.get("/me", authMiddleware, getMyProfile);
 router.get("/users", getAllUsers);
 router.post("/create-multiple-users", createMultipleUsers);

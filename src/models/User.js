@@ -25,11 +25,17 @@ const userSchema = new mongoose.Schema(
             select: false, // hide password by default
         },
 
-        // role: {
-        //     type: String,
-        //     enum: ["user", "admin", "super_admin", "director", "partner", "general_manager", "regional_manager", "team_leader", "hr_manager", "hr_officer", "hr_executive", "business_development_manager", "business_development_officer", "business_development_executive", "client_relationship_officer", "corporate_trainer", "admin_executive", "front_office_assistant", "intern"],
-        //     default: "user",
-        // },
+        role: {
+            type: String,
+            enum: ["user", "admin"],
+            default: "user",
+            index: true,
+        },
+        approvalStatus: {
+            type: String,
+            enum: ["pending", "approved", "rejected"],
+            default: "pending",
+        },
 
         designation: {
             type: String,
@@ -63,7 +69,7 @@ const userSchema = new mongoose.Schema(
 
         isActive: {
             type: Boolean,
-            default: true,
+            default: false,
             index: true,
         },
     },

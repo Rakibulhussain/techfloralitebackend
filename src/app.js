@@ -14,6 +14,8 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", require("./routers/authRoutes"));
+app.use("/api/admin", require("./routers/adminRoutes"));
+app.use("/api/gallery", require("./routers/galleryRoutes"));
 
 
 module.exports = app;
