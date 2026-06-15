@@ -7,8 +7,12 @@ UPLOAD IMAGE
 ========================================================== */
 const uploadGalleryImage = async (req, res) => {
   try {
-    const { title, category, description } = req.body;
-
+    const {
+      title,
+      category,
+      description,
+      displayIn, // Added
+    } = req.body;
 
     if (!req.file) {
       return res.status(400).json({
@@ -37,6 +41,7 @@ const uploadGalleryImage = async (req, res) => {
       title,
       category,
       description,
+      displayIn: displayIn || "Gallery", // Added
       mediaType: "image",
       mediaUrl: uploadedImage.url,
       fileId: uploadedImage.fileId,
@@ -50,17 +55,13 @@ const uploadGalleryImage = async (req, res) => {
       gallery,
     });
 
-
   } catch (error) {
     console.error("Image Upload Error:", error);
-
 
     return res.status(500).json({
       success: false,
       message: error.message,
     });
-
-
   }
 };
 
@@ -69,7 +70,12 @@ UPLOAD VIDEO
 ========================================================== */
 const uploadGalleryVideo = async (req, res) => {
   try {
-    const { title, category, description } = req.body;
+    const {
+      title,
+      category,
+      description,
+      displayIn, // Added
+    } = req.body;
 
 
     if (!req.file) {
@@ -140,8 +146,12 @@ UPDATE GALLERY ITEM
 const updateGalleryMedia = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, category, description } = req.body;
-
+    const {
+      title,
+      category,
+      description,
+      displayIn,
+    } = req.body;
 
     const gallery = await Gallery.findById(id);
 
@@ -152,20 +162,36 @@ const updateGalleryMedia = async (req, res) => {
       });
     }
 
+    // Update fields
     if (title) gallery.title = title;
     if (category) gallery.category = category;
-    if (description !== undefined)
-      gallery.description = description;
 
+    if (
+      displayIn &&
+      ["Event", "Gallery"].includes(displayIn)
+    ) {
+      gallery.displayIn = displayIn;
+    }
+
+    if (description !== undefined) {
+      gallery.description = description;
+    }
+
+    // If new file uploaded
     if (req.file) {
+      // Delete old file from ImageKit
       if (gallery.fileId) {
         try {
           await imagekit.deleteFile(gallery.fileId);
         } catch (err) {
-          console.log("Old file delete failed:", err.message);
+          console.log(
+            "Old file delete failed:",
+            err.message
+          );
         }
       }
 
+      // Upload new file
       const uploadedFile = await imagekit.upload({
         file: req.file.buffer,
         fileName: `${Date.now()}-${req.file.originalname}`,
@@ -179,6 +205,7 @@ const updateGalleryMedia = async (req, res) => {
       gallery.mediaUrl = uploadedFile.url;
       gallery.fileId = uploadedFile.fileId;
 
+      // Update thumbnail for videos
       if (gallery.mediaType === "video") {
         gallery.thumbnailUrl =
           uploadedFile.thumbnailUrl || "";
@@ -192,48 +219,112 @@ const updateGalleryMedia = async (req, res) => {
       message: "Gallery updated successfully",
       gallery,
     });
-
-
   } catch (error) {
-    console.error("Update Gallery Error:", error);
-
+    console.error(
+      "Update Gallery Error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
       message: error.message,
     });
-
-
   }
 };
 
 /* ==========================================================
-GET ALL GALLERY ITEMS
+GET IMAGES ONLY
 ========================================================== */
 /* ==========================================================
-   GET ALL GALLERY ITEMS WITH PAGINATION
+GET IMAGES ONLY
 ========================================================== */
-const getGallery = async (req, res) => {
+const getGalleryImages = async (req, res) => {
   try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 15;
+    const limit = Number(req.query.limit) || 20;
+    const { displayIn } = req.query;
 
-    const skip = (page - 1) * limit;
+    const filter = {
+      mediaType: "image",
+    };
 
-    const total = await Gallery.countDocuments();
+    if (displayIn) {
+      filter.displayIn = displayIn;
+    }
 
-    const gallery = await Gallery.find()
-      .populate("uploadedBy", "name email")
+    const images = await Gallery.find(filter)
       .sort({ createdAt: -1 })
-      .skip(skip)
       .limit(limit);
 
     return res.status(200).json({
       success: true,
-      currentPage: page,
-      totalPages: Math.ceil(total / limit),
-      totalItems: total,
-      count: gallery.length,
+      total: images.length,
+      images,
+    });
+  } catch (error) {
+    console.error("Get Images Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+/* ==========================================================
+GET VIDEOS ONLY
+========================================================== */
+/* ==========================================================
+GET VIDEOS ONLY
+========================================================== */
+const getGalleryVideos = async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 6;
+    const { displayIn } = req.query;
+
+    const filter = {
+      mediaType: "video",
+    };
+
+    if (displayIn) {
+      filter.displayIn = displayIn;
+    }
+
+    const videos = await Gallery.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    return res.status(200).json({
+      success: true,
+      total: videos.length,
+      videos,
+    });
+  } catch (error) {
+    console.error("Get Videos Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+/* ==========================================================
+GET ALL GALLERY ITEMS
+========================================================== */
+const getAllGallery = async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 20;
+
+    const gallery = await Gallery.find()
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    return res.status(200).json({
+      success: true,
+      total: gallery.length,
       gallery,
     });
   } catch (error) {
@@ -246,132 +337,6 @@ const getGallery = async (req, res) => {
   }
 };
 
-/* ==========================================================
-GET SINGLE GALLERY ITEM
-========================================================== */
-const getGalleryById = async (req, res) => {
-  try {
-    const gallery = await Gallery.findById(req.params.id)
-      .populate("uploadedBy", "name email");
-
-
-    if (!gallery) {
-      return res.status(404).json({
-        success: false,
-        message: "Gallery item not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      gallery,
-    });
-
-
-  } catch (error) {
-    console.error("Get Gallery By Id Error:", error);
-
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-
-
-  }
-};
-
-/* ==========================================================
-GET IMAGES ONLY
-========================================================== */
-const getGalleryImages = async (req, res) => {
-  try {
-    const images = await Gallery.find({
-      mediaType: "image",
-    }).sort({ createdAt: -1 });
-
-    
-return res.status(200).json({
-  success: true,
-  total: images.length,
-  images,
-});
-
-
-  } catch (error) {
-    console.error("Get Images Error:", error);
-
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-
-
-  }
-};
-
-/* ==========================================================
-GET VIDEOS ONLY
-========================================================== */
-const getGalleryVideos = async (req, res) => {
-  try {
-    const videos = await Gallery.find({
-      mediaType: "video",
-    }).sort({ createdAt: -1 });
-
-
-    return res.status(200).json({
-      success: true,
-      total: videos.length,
-      videos,
-    });
-
-
-  } catch (error) {
-    console.error("Get Videos Error:", error);
-
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-
-
-  }
-};
-
-/* ==========================================================
-GET GALLERY BY CATEGORY
-========================================================== */
-const getGalleryByCategory = async (req, res) => {
-  try {
-    const { category } = req.params;
-
-
-    const gallery = await Gallery.find({
-      category,
-    }).sort({ createdAt: -1 });
-
-    return res.status(200).json({
-      success: true,
-      total: gallery.length,
-      gallery,
-    });
-
-
-  } catch (error) {
-    console.error("Category Gallery Error:", error);
-
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-
-
-  }
-};
 
 /* ==========================================================
 DELETE GALLERY ITEM
@@ -419,10 +384,8 @@ module.exports = {
   uploadGalleryImage,
   uploadGalleryVideo,
   updateGalleryMedia,
-  getGallery,
-  getGalleryById,
   getGalleryImages,
   getGalleryVideos,
-  getGalleryByCategory,
+  getAllGallery,
   deleteGalleryMedia,
 };

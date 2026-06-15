@@ -128,9 +128,12 @@ const loginUser = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const userId = req.user.id; // from auth middleware
+    // Agar payload mein targetUserId hai toh admin edit kar raha hai, nahi toh logged-in user khud kar raha hai
+    const userId = req.body.targetUserId || req.user.id; 
 
     const {
+      name,         // Name handle karne ke liye add kiya
+      email,        // Gmail update karne ke liye add kiya
       role,
       designation,
       department,
@@ -139,9 +142,22 @@ const updateProfile = async (req, res) => {
       isActive,
     } = req.body;
 
+    // Check karein agar email badla ja raha hai, toh naya email unique hona chahiye
+    if (email) {
+      const emailExists = await User.findOne({ email, _id: { $ne: userId } });
+      if (emailExists) {
+        return res.status(400).json({
+          success: false,
+          message: "This email address is already registered with another account.",
+        });
+      }
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
+        name,
+        email,      // Database mein save hoga
         role,
         designation,
         department,
@@ -222,7 +238,8 @@ const uploadProfileImage = async (req, res) => {
 //get my profile
 const getMyProfile = async (req, res) => {
   try {
-    const userId = req.user.id;
+    // 🔥 FIX: 'id' ki jagah '_id' ka use karein
+    const userId = req.user._id; 
 
     const user = await User.findById(userId).select("-password");
 
@@ -251,7 +268,7 @@ const getAllUsers = async (req, res) => {
   try {
     const users = await User.find(
       { isActive: true },
-      "name  designation department imageUrl linkedin"
+      "name email designation department imageUrl linkedin"
     );
 
     res.status(200).json({

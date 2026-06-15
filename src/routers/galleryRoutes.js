@@ -6,15 +6,15 @@ const {
   uploadGalleryImage,
   uploadGalleryVideo,
   updateGalleryMedia,
-  getGallery,
+  deleteGalleryMedia,
   getGalleryImages,
   getGalleryVideos,
-  getGalleryById,
-  getGalleryByCategory,
-  deleteGalleryMedia,
+  getAllGallery 
 } = require("../controllers/galleryController");
 
+
 const router = express.Router();
+
 
 /* ==========================================================
    UPLOAD
@@ -52,8 +52,7 @@ router.put(
    GET
 ========================================================== */
 
-// Get All Gallery
-router.get("/", getGallery);
+
 
 // Get Images Only
 router.get("/images", getGalleryImages);
@@ -61,11 +60,8 @@ router.get("/images", getGalleryImages);
 // Get Videos Only
 router.get("/videos", getGalleryVideos);
 
-// Get Category Wise
-router.get("/category/:category", getGalleryByCategory);
 
-// Get Single Gallery Item
-router.get("/:id", getGalleryById);
+router.get("/", getAllGallery);
 
 /* ==========================================================
    DELETE

@@ -18,6 +18,16 @@ const gallerySchema = new mongoose.Schema(
       default: "",
     },
 
+    // adding this field to differentiate between event and gallery media 
+    // this will help in filtering the media based on the display type like if it is for event or gallery
+    // this will be used in the frontend to display the media in the respective sections
+   
+    displayIn:{
+      type: String,
+      enum:["Event","Gallery"],
+      default:"Gallery"
+    },
+
     mediaType: {
       type: String,
       enum: ["image", "video"],

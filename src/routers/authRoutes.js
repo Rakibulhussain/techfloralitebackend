@@ -24,6 +24,7 @@ router.post(
   uploadProfileImage
 );
 
+
 router.get("/me", authMiddleware, getMyProfile);
 router.get("/users", getAllUsers);
 router.post("/create-multiple-users", createMultipleUsers);
