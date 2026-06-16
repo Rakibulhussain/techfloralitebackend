@@ -3,42 +3,64 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const imagekit = require("../config/imagekit");
 
+
 // Register User
 const registerUser = async (req, res) => {
   try {
+    // 💡 Agar multer parse na kar paye toh safe fail empty object backup lagaya hai
+    const bodyData = req.body || {};
+    
     const {
       name,
       email,
       password,
       designation,
       department,
-    } = req.body;
+      linkedin,
+      facebook,
+    } = bodyData;
+
+    // Strict frontend validation check
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: Name, Email, or Password is required.",
+      });
+    }
 
     const existingUser = await User.findOne({ email });
-
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "User already exists",
+        message: "User already exists with this email",
       });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Image compulsory nahi hai, agar aayi toh safe variable assignment
+    let imageUrl = "";
+    if (req.file) {
+      imageUrl = req.file.path || req.file.filename || ""; 
+    }
 
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
       role: "user",
-      designation,
-      department,
+      designation: designation || "",
+      department: department || "",
+      imageUrl,
+      linkedin: linkedin || "",
+      facebook: facebook || "",
       approvalStatus: "pending",
+      isActive: false,
     });
 
     res.status(201).json({
       success: true,
-      message:
-        "Registration successful. Please wait for admin approval.",
+      message: "Registration successful. Please wait for admin approval.",
       user: {
         id: user._id,
         name: user.name,
@@ -50,11 +72,10 @@ const registerUser = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Internal Server Error",
     });
   }
 };
-
 // Login User
 const loginUser = async (req, res) => {
   try {
@@ -123,9 +144,41 @@ const loginUser = async (req, res) => {
     });
   }
 };
+
+// update password 
+const updatePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    
+    // authMiddleware se user ID nikalna (Zaroori: check karein aapka middleware id kis naam se bhejta hai)
+    const userId = req.user?._id || req.user?.id; 
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const user = await User.findById(userId).select("+password");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: "Incorrect old password" });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Password updated successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 //updated user info
-
-
 const updateProfile = async (req, res) => {
   try {
     // Agar payload mein targetUserId hai toh admin edit kar raha hai, nahi toh logged-in user khud kar raha hai
@@ -330,4 +383,5 @@ module.exports = {
   getMyProfile,
   getAllUsers,
   createMultipleUsers,
+  updatePassword,
 };
