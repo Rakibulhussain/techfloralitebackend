@@ -5,6 +5,9 @@ getAllMessages,
 deletePublicMessage
 } = require("../controllers/contactController");
 
+const {getPublicPartners} =require("../controllers/partnerController")
+
+
 const {
   authMiddleware,
   isAdmin,
@@ -26,5 +29,9 @@ router.get('/all-messages',authMiddleware, getAllMessages);
 
 // 3. Dynamic delete command endpoint pass via parameter ID 
 router.delete('/public-messages/:id',authMiddleware, deletePublicMessage);
+
+router.get("/gettingPartner",getPublicPartners)
+
+
 
 module.exports = router;

@@ -1,10 +1,13 @@
 const express = require("express");
 const cors = require("cors");
+const {requestLogger} =require("./middlewares/requestLoger")
+
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger);
 
 app.get("/", (req, res) => {
   res.json({
@@ -14,8 +17,13 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", require("./routers/authRoutes"));
+
 app.use("/api/admin", require("./routers/adminRoutes"));
 app.use("/api/gallery", require("./routers/galleryRoutes"));
 app.use("/api/info", require("./routers/infoRoutes"));
 app.use("/api/contact",require("./routers/contactRoutes"));
+
+app.use("/api/partners", require("./routers/partnerRoutes"));
+
 module.exports = app;
+

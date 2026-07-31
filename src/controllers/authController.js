@@ -38,7 +38,6 @@ const registerUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Image compulsory nahi hai, agar aayi toh safe variable assignment
     let imageUrl = "";
     if (req.file) {
       imageUrl = req.file.path || req.file.filename || ""; 
@@ -261,7 +260,7 @@ const uploadProfileImage = async (req, res) => {
     const result = await imagekit.upload({
       file: req.file.buffer,
       fileName: `profile-${Date.now()}.jpg`,
-      folder: "/techfloraGlallery/employee",
+      folder: "/techfloraGlallery/employeeImage",
     });
 
     const user = await User.findByIdAndUpdate(
