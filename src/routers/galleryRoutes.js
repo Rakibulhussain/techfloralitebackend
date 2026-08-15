@@ -56,12 +56,13 @@ router.put(
 
 // Get Images Only
 router.get("/images", getGalleryImages);
+//get all gallery items
+router.get("/", getAllGallery);
 
 // Get Videos Only
 router.get("/videos", getGalleryVideos);
 
 
-router.get("/", getAllGallery);
 
 /* ==========================================================
    DELETE
