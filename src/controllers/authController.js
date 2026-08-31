@@ -1,13 +1,11 @@
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const imagekit = require("../config/imagekit");
-
+import User from "../models/User.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import imagekit from "../config/imagekit.js";
 
 // Register User
-const registerUser = async (req, res) => {
+export const registerUser = async (req, res) => {
   try {
-    // 💡 Agar multer parse na kar paye toh safe fail empty object backup lagaya hai
     const bodyData = req.body || {};
     
     const {
@@ -75,8 +73,9 @@ const registerUser = async (req, res) => {
     });
   }
 };
+
 // Login User
-const loginUser = async (req, res) => {
+export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -89,10 +88,7 @@ const loginUser = async (req, res) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({
@@ -144,12 +140,11 @@ const loginUser = async (req, res) => {
   }
 };
 
-// update password 
-const updatePassword = async (req, res) => {
+// Update Password 
+export const updatePassword = async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
     
-    // authMiddleware se user ID nikalna (Zaroori: check karein aapka middleware id kis naam se bhejta hai)
     const userId = req.user?._id || req.user?.id; 
 
     if (!userId) {
@@ -176,16 +171,14 @@ const updatePassword = async (req, res) => {
   }
 };
 
-
-//updated user info
-const updateProfile = async (req, res) => {
+// Update User Profile
+export const updateProfile = async (req, res) => {
   try {
-    // Agar payload mein targetUserId hai toh admin edit kar raha hai, nahi toh logged-in user khud kar raha hai
-    const userId = req.body.targetUserId || req.user.id; 
+    const userId = req.body.targetUserId || req.user?.id || req.user?._id; 
 
     const {
-      name,         // Name handle karne ke liye add kiya
-      email,        // Gmail update karne ke liye add kiya
+      name,
+      email,
       role,
       designation,
       department,
@@ -194,7 +187,6 @@ const updateProfile = async (req, res) => {
       isActive,
     } = req.body;
 
-    // Check karein agar email badla ja raha hai, toh naya email unique hona chahiye
     if (email) {
       const emailExists = await User.findOne({ email, _id: { $ne: userId } });
       if (emailExists) {
@@ -209,7 +201,7 @@ const updateProfile = async (req, res) => {
       userId,
       {
         name,
-        email,      // Database mein save hoga
+        email,
         role,
         designation,
         department,
@@ -243,12 +235,10 @@ const updateProfile = async (req, res) => {
   }
 };
 
-
-//upload profile image to imagekit
-
-const uploadProfileImage = async (req, res) => {
+// Upload Profile Image to ImageKit
+export const uploadProfileImage = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id || req.user?._id;
 
     if (!req.file) {
       return res.status(400).json({
@@ -287,11 +277,10 @@ const uploadProfileImage = async (req, res) => {
   }
 };
 
-//get my profile
-const getMyProfile = async (req, res) => {
+// Get My Profile
+export const getMyProfile = async (req, res) => {
   try {
-    // 🔥 FIX: 'id' ki jagah '_id' ka use karein
-    const userId = req.user._id; 
+    const userId = req.user?._id || req.user?.id; 
 
     const user = await User.findById(userId).select("-password");
 
@@ -314,29 +303,50 @@ const getMyProfile = async (req, res) => {
   }
 };
 
-// get all user info ---
-//  public routes --- 
-const getAllUsers = async (req, res) => {
+// Get All Users (Paginated)
+export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find(
-      { isActive: true },
-      "name email designation department imageUrl linkedin"
-    );
+    const pageParam = parseInt(req.query.page, 10);
+    const limitParam = parseInt(req.query.limit, 10);
 
-    res.status(200).json({
+    const page = !isNaN(pageParam) && pageParam > 0 ? pageParam : 1;
+    const limit = !isNaN(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 5;
+
+    const skip = (page - 1) * limit;
+
+    const query = { isActive: true };
+    const projection = "name email designation department imageUrl linkedin";
+
+    const [users, totalUsers] = await Promise.all([
+      User.find(query, projection)
+        .sort({ _id: 1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      User.countDocuments(query),
+    ]);
+
+    const totalPages = Math.ceil(totalUsers / limit) || 1;
+
+    return res.status(200).json({
       success: true,
+      count: users.length,
+      totalUsers,
+      totalPages,
+      currentPage: page,
       users,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Error in getAllUsers controller:", error);
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "An internal server error occurred while retrieving users.",
     });
   }
 };
 
-
-const createMultipleUsers = async (req, res) => {
+// Bulk Create Users
+export const createMultipleUsers = async (req, res) => {
   try {
     const users = req.body;
 
@@ -370,17 +380,4 @@ const createMultipleUsers = async (req, res) => {
       message: error.message,
     });
   }
-};
-
-
-
-module.exports = {
-  registerUser,
-  loginUser,
-  updateProfile,
-  uploadProfileImage,
-  getMyProfile,
-  getAllUsers,
-  createMultipleUsers,
-  updatePassword,
 };

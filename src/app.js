@@ -18,6 +18,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", require("./routers/authRoutes"));
 
+app.use("/api/slide", require("./routers/slideShowRouter.js"));
+
 app.use("/api/admin", require("./routers/adminRoutes"));
 app.use("/api/gallery", require("./routers/galleryRoutes"));
 app.use("/api/info", require("./routers/infoRoutes"));
