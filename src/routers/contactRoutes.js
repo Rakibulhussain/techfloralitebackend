@@ -2,7 +2,8 @@ const {
 postMessage, 
 getAdminMessages ,
 getAllMessages,
-deletePublicMessage
+deletePublicMessage,
+updateMessageStatus
 } = require("../controllers/contactController");
 
 const {getPublicPartners} =require("../controllers/partnerController")
@@ -31,6 +32,10 @@ router.get('/all-messages',authMiddleware, getAllMessages);
 router.delete('/public-messages/:id',authMiddleware, deletePublicMessage);
 
 router.get("/gettingPartner",getPublicPartners)
+
+//status check route
+router.patch('/:id/status', updateMessageStatus);
+
 
 
 

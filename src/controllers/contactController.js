@@ -133,3 +133,45 @@ export const deletePublicMessage = async (req, res) => {
     });
   }
 };
+
+
+export const updateMessageStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Validate status
+    const validStatuses = ['Pending', 'In Progress', 'Resolved'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status value. Allowed values are: Pending, In Progress, Resolved.'
+      });
+    }
+
+    // Check if message exists
+    const message = await Contact.findById(id);
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'The message you are trying to update does not exist.'
+      });
+    }
+
+    // Update status
+    message.status = status;
+    await message.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Message status updated to '${status}' successfully.`,
+      data: message
+    });
+  } catch (error) {
+    console.error('Error in updateMessageStatus:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Internal Server Error. Could not update message status.'
+    });
+  }
+};
