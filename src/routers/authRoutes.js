@@ -11,7 +11,7 @@ const {
     getMyProfile,
     getAllUsers,
     createMultipleUsers,
-    updatePassword,
+    updatePassword,getBranches
 } = require("../controllers/authController");
 
 const router = express.Router();
@@ -20,6 +20,7 @@ router.post("/register",upload.single("image"), registerUser);
 router.post("/login", loginUser);
 
 router.put("/password-update",authMiddleware,updatePassword),
+
 router.put("/update-profile",authMiddleware, updateProfile);
 router.post(
   "/upload-profile-image",
@@ -32,4 +33,6 @@ router.post(
 router.get("/me", authMiddleware, getMyProfile);
 router.get("/users", getAllUsers);
 router.post("/create-multiple-users", createMultipleUsers);
+
+router.get("/branches", getBranches);
 module.exports = router;

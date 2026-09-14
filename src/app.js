@@ -29,3 +29,5 @@ app.use("/api/partners", require("./routers/partnerRoutes"));
 
 module.exports = app;
 
+
+

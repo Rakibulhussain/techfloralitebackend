@@ -8,7 +8,6 @@ const userSchema = new mongoose.Schema(
             trim: true,
             maxlength: 100,
         },
-
         email: {
             type: String,
             required: [true, "Email is required"],
@@ -72,7 +71,15 @@ const userSchema = new mongoose.Schema(
             default: false,
             index: true,
         },
+
+        branch: {
+            type: String,
+            trim: true,
+            enum: ["Head Branch Guwahati", "Barpeta"],
+            default: "Head Branch Guwahati",
+        },
     },
+
     {
         timestamps: true,
         versionKey: false,
