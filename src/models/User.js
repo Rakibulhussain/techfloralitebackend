@@ -75,7 +75,7 @@ const userSchema = new mongoose.Schema(
         branch: {
             type: String,
             trim: true,
-            enum: ["Head Branch Guwahati", "Barpeta"],
+            enum: ["Head Branch Guwahati", "Barpeta","Hojai" ,"Bangladesh"],
             default: "Head Branch Guwahati",
         },
     },
