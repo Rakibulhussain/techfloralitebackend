@@ -1,25 +1,48 @@
-const express = require("express");
-const router = express.Router();
+/**
+ * @file partner.routes.js
+ * @description Routes for Partner and Branch management.
+ */
 
-const { authMiddleware, isAdmin } = require("../middlewares/authMiddleware");
-
-const {
-  createPartner,
+import express from "express";
+import { authMiddleware, isAdmin } from "../middlewares/authMiddleware.js";
+import {
+  // Partner Controllers
   getPartners,
   getPartnerById,
+  createPartner,
   updatePartner,
   deletePartner,
-} = require("../controllers/partnerController");
+  getPublicPartners,
+  getPublicPartnersDetails
+} from "../controllers/partnerController.js";
 
-// Apply authentication & admin middleware globally to all partner routes
+const router = express.Router();
 
-router.use(authMiddleware, isAdmin);
+// ==================== Public Partner Routes ====================
+// @route   GET /api/partners/public
+// @desc    Get limited public partner listings
+router.get("/public", getPublicPartners);
+router.get("/public-url-logo", getPublicPartnersDetails);
+// ==================== Partner Admin Routes ====================
 
-// Routes
-router.post("/", createPartner);          // POST /api/partners
-router.get("/", getPartners);             // GET /api/partners (Paginated + Search)
-router.get("/:id", getPartnerById);       // GET /api/partners/:id
-router.put("/:id", updatePartner);         // PUT /api/partners/:id
-router.delete("/:id", deletePartner);     // DELETE /api/partners/:id
+// @route   GET /api/partners
+// @desc    Get all partners (Admin)
+router.get("/", authMiddleware, isAdmin, getPartners);
 
-module.exports = router;
+// @route   POST /api/partners
+// @desc    Create a new partner (Admin)
+router.post("/", authMiddleware, isAdmin, createPartner);
+
+// @route   GET /api/partners/:id
+// @desc    Get a single partner by ID (Admin) (MUST BE AFTER /branches ROUTES)
+router.get("/:id", authMiddleware, isAdmin, getPartnerById);
+
+// @route   PUT /api/partners/:id
+// @desc    Update a partner by ID (Admin)
+router.put("/:id", authMiddleware, isAdmin, updatePartner);
+
+// @route   DELETE /api/partners/:id
+// @desc    Delete a partner by ID (Admin)
+router.delete("/:id", authMiddleware, isAdmin, deletePartner);
+
+export default router;

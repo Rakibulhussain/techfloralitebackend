@@ -25,8 +25,9 @@ app.use("/api/gallery", require("./routers/galleryRoutes"));
 app.use("/api/info", require("./routers/infoRoutes"));
 app.use("/api/contact",require("./routers/contactRoutes"));
 
-app.use("/api/partners", require("./routers/partnerRoutes"));
+app.use("/api/partners", require("./routers/partnerRoutes").default);
 
+app.use("/api/branches", require("./routers/branchRoutes").default);
 module.exports = app;
 
 
