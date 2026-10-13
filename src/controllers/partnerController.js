@@ -29,15 +29,19 @@ const handleValidationError = (err) => {
 
 export const getPublicPartnersDetails = async (req, res) => {
   try {
+    // 1. Safe parsing & clamping for pagination parameters
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const reqLimit = parseInt(req.query.limit, 10) || 10;
-    const MAX_LIMIT = 10;
+    const MAX_LIMIT = 30; // Production safety limit to prevent heavy payloads
     const limit = Math.min(Math.max(1, reqLimit), MAX_LIMIT);
     const skip = (page - 1) * limit;
+    
+    // 2. Search sanitization
     const search = req.query.search ? req.query.search.trim() : "";
 
+    // 3. Strict Query definition based on schema status
     const query = {
-      status: "Active",
+      status: "Active", // Only fetch active partners for public view
       ...(search && {
         $or: [
           { partnerName: { $regex: search, $options: "i" } },
@@ -46,11 +50,13 @@ export const getPublicPartnersDetails = async (req, res) => {
       }),
     };
 
+    // 4. Parallel execution for performance optimization
     const [partners, totalRecords] = await Promise.all([
       Partner.find(query)
-        .select("partnerName partnerType partnerLogoUrl partnerWebsite partnerAddress branches -_id")
-        // FIXED: Latest records pehle dikhane ke liye -1 use kiya gaya hai
-        .sort({ createdAt: -1 }) 
+        // NOTE: _id ko exclude (-_id) mat karna, warna frontend par React key mapping mein error aayega
+        .select("partnerName partnerType partnerLogoUrl partnerWebsite partnerAddress branches")
+        // STRICT LIFO (Newest first) with a secondary tie-breaker (_id) to prevent duplicate records
+        .sort({ createdAt: -1, _id: -1 }) 
         .skip(skip)
         .limit(limit)
         .lean(),
@@ -58,7 +64,9 @@ export const getPublicPartnersDetails = async (req, res) => {
     ]);
 
     const totalPages = Math.ceil(totalRecords / limit) || 1;
+    const hasMore = page < totalPages;
 
+    // 5. Standardized JSON response
     return res.status(200).json({
       success: true,
       meta: {
@@ -66,7 +74,7 @@ export const getPublicPartnersDetails = async (req, res) => {
         currentPage: page,
         totalPages,
         limit,
-        hasMore: page < totalPages, // Infinite scroll ke liye useful flag
+        hasMore, // Tells the frontend infinite scroll hook whether to fetch more batches
       },
       data: partners,
     });
@@ -78,7 +86,6 @@ export const getPublicPartnersDetails = async (req, res) => {
     });
   }
 };
-
 
 
 export const getPartners = async (req, res) => {
