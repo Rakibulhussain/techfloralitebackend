@@ -31,7 +31,7 @@ export const getPublicPartnersDetails = async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const reqLimit = parseInt(req.query.limit, 10) || 10;
-    const MAX_LIMIT = 30;
+    const MAX_LIMIT = 10;
     const limit = Math.min(Math.max(1, reqLimit), MAX_LIMIT);
     const skip = (page - 1) * limit;
     const search = req.query.search ? req.query.search.trim() : "";
@@ -48,22 +48,25 @@ export const getPublicPartnersDetails = async (req, res) => {
 
     const [partners, totalRecords] = await Promise.all([
       Partner.find(query)
-        // Added partnerLogoUrl to the selected fields
         .select("partnerName partnerType partnerLogoUrl partnerWebsite partnerAddress branches -_id")
-        .sort({ createdAt: -1 })
+        // FIXED: Latest records pehle dikhane ke liye -1 use kiya gaya hai
+        .sort({ createdAt: -1 }) 
         .skip(skip)
         .limit(limit)
         .lean(),
       Partner.countDocuments(query),
     ]);
 
+    const totalPages = Math.ceil(totalRecords / limit) || 1;
+
     return res.status(200).json({
       success: true,
       meta: {
         totalRecords,
         currentPage: page,
-        totalPages: Math.ceil(totalRecords / limit) || 1,
+        totalPages,
         limit,
+        hasMore: page < totalPages, // Infinite scroll ke liye useful flag
       },
       data: partners,
     });

@@ -12,7 +12,8 @@ const handleValidationError = (err) => {
 export const getBranches = async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    // Limit ko default 4 set kiya gaya hai (max 50 limit rakhi hai safety ke liye)
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 4));
     const search = req.query.search ? req.query.search.trim() : "";
 
     const query = search
@@ -22,20 +23,24 @@ export const getBranches = async (req, res) => {
     const [total, branches] = await Promise.all([
       Branch.countDocuments(query),
       Branch.find(query)
-        .sort({ createdAt: +1 })
+        .sort({ createdAt: 1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .lean(),
     ]);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+    const hasMore = page < totalPages; // Infinite scroll ke liye helpful flag
 
     return res.status(200).json({
       success: true,
       data: branches,
       pagination: {
         total,
-        pages: Math.ceil(total / limit) || 1,
+        pages: totalPages,
         currentPage: page,
         limit,
+        hasMore, // Ye frontend ko batayega ki aur data bacha hai ya nahi
       },
     });
   } catch (error) {
